@@ -13,57 +13,57 @@ import (
 	"unsafe"
 
 	"github.com/gin-gonic/gin"
-	"github.com/manyminds/api2go"
-	"github.com/manyminds/api2go/examples/model"
-	"github.com/manyminds/api2go/examples/resource"
-	"github.com/manyminds/api2go/examples/storage"
-	"github.com/manyminds/api2go/routing"
+	"github.com/jtumidanski/api2go"
+	"github.com/jtumidanski/api2go/examples/model"
+	"github.com/jtumidanski/api2go/examples/resource"
+	"github.com/jtumidanski/api2go/examples/storage"
+	"github.com/jtumidanski/api2go/routing"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("api2go with gingonic router adapter", func() {
-	var (
-		router       routing.Routeable
-		gg           *gin.Engine
-		api          *api2go.API
-		rec          *httptest.ResponseRecorder
-		contextKey   = "userID"
-		contextValue *string
-		apiContext   api2go.APIContext
-		userStorage  *storage.UserStorage
+var (
+	router       routing.Routeable
+	gg           *gin.Engine
+	api          *api2go.API
+	rec          *httptest.ResponseRecorder
+	contextKey   = "userID"
+	contextValue *string
+	apiContext   api2go.APIContext
+	userStorage  *storage.UserStorage
+)
+
+var _ = BeforeSuite(func() {
+	gin.SetMode(gin.ReleaseMode)
+	gg = gin.Default()
+	router = routing.Gin(gg)
+	api = api2go.NewAPIWithRouting(
+		"api",
+		api2go.NewStaticResolver("/"),
+		router,
 	)
 
-	BeforeSuite(func() {
-		gin.SetMode(gin.ReleaseMode)
-		gg = gin.Default()
-		router = routing.Gin(gg)
-		api = api2go.NewAPIWithRouting(
-			"api",
-			api2go.NewStaticResolver("/"),
-			router,
-		)
-
-		// Define the ApiContext to allow for access.
-		apiContext = api2go.APIContext{}
-		api.SetContextAllocator(func(*api2go.API) api2go.APIContexter {
-			return &apiContext
-		})
-
-		userStorage = storage.NewUserStorage()
-		chocStorage := storage.NewChocolateStorage()
-		api.AddResource(model.User{}, resource.UserResource{ChocStorage: chocStorage, UserStorage: userStorage})
-
-		gg.Use(func(c *gin.Context) {
-			if contextValue != nil {
-				c.Set(contextKey, *contextValue)
-			}
-		})
-
-		api.AddResource(model.Chocolate{}, resource.ChocolateResource{ChocStorage: chocStorage, UserStorage: userStorage})
+	// Define the ApiContext to allow for access.
+	apiContext = api2go.APIContext{}
+	api.SetContextAllocator(func(*api2go.API) api2go.APIContexter {
+		return &apiContext
 	})
 
+	userStorage = storage.NewUserStorage()
+	chocStorage := storage.NewChocolateStorage()
+	api.AddResource(model.User{}, resource.UserResource{ChocStorage: chocStorage, UserStorage: userStorage})
+
+	gg.Use(func(c *gin.Context) {
+		if contextValue != nil {
+			c.Set(contextKey, *contextValue)
+		}
+	})
+
+	api.AddResource(model.Chocolate{}, resource.ChocolateResource{ChocStorage: chocStorage, UserStorage: userStorage})
+})
+
+var _ = Describe("api2go with gingonic router adapter", func() {
 	BeforeEach(func() {
 		log.SetOutput(ioutil.Discard)
 		rec = httptest.NewRecorder()

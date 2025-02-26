@@ -10,40 +10,40 @@ import (
 	"net/http/httptest"
 	"strings"
 
+	"github.com/jtumidanski/api2go"
+	"github.com/jtumidanski/api2go/examples/model"
+	"github.com/jtumidanski/api2go/examples/resource"
+	"github.com/jtumidanski/api2go/examples/storage"
+	"github.com/jtumidanski/api2go/routing"
 	"github.com/labstack/echo"
-	"github.com/manyminds/api2go"
-	"github.com/manyminds/api2go/examples/model"
-	"github.com/manyminds/api2go/examples/resource"
-	"github.com/manyminds/api2go/examples/storage"
-	"github.com/manyminds/api2go/routing"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("api2go with echo router adapter", func() {
-	var (
-		router routing.Routeable
-		e      *echo.Echo
-		api    *api2go.API
-		rec    *httptest.ResponseRecorder
+var (
+	router routing.Routeable
+	e      *echo.Echo
+	api    *api2go.API
+	rec    *httptest.ResponseRecorder
+)
+
+var _ = BeforeSuite(func() {
+	e = echo.New()
+	router = routing.Echo(e)
+	api = api2go.NewAPIWithRouting(
+		"api",
+		api2go.NewStaticResolver("/"),
+		router,
 	)
 
-	BeforeSuite(func() {
-		e = echo.New()
-		router = routing.Echo(e)
-		api = api2go.NewAPIWithRouting(
-			"api",
-			api2go.NewStaticResolver("/"),
-			router,
-		)
+	userStorage := storage.NewUserStorage()
+	chocStorage := storage.NewChocolateStorage()
+	api.AddResource(model.User{}, resource.UserResource{ChocStorage: chocStorage, UserStorage: userStorage})
+	api.AddResource(model.Chocolate{}, resource.ChocolateResource{ChocStorage: chocStorage, UserStorage: userStorage})
+})
 
-		userStorage := storage.NewUserStorage()
-		chocStorage := storage.NewChocolateStorage()
-		api.AddResource(model.User{}, resource.UserResource{ChocStorage: chocStorage, UserStorage: userStorage})
-		api.AddResource(model.Chocolate{}, resource.ChocolateResource{ChocStorage: chocStorage, UserStorage: userStorage})
-	})
-
+var _ = Describe("api2go with echo router adapter", func() {
 	BeforeEach(func() {
 		log.SetOutput(ioutil.Discard)
 		rec = httptest.NewRecorder()

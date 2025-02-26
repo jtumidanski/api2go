@@ -1,8 +1,8 @@
 package main_test
 
 import (
-	"github.com/manyminds/api2go"
-	. "github.com/onsi/ginkgo"
+	"github.com/jtumidanski/api2go"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"testing"

@@ -5,8 +5,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/manyminds/api2go/jsonapi"
-	"github.com/manyminds/api2go/routing"
+	"github.com/jtumidanski/api2go/jsonapi"
+	"github.com/jtumidanski/api2go/routing"
 )
 
 // HandlerFunc for api2go middlewares
@@ -28,7 +28,7 @@ func (api API) Handler() http.Handler {
 	return api.router.Handler()
 }
 
-//Router returns the specified router on an api instance
+// Router returns the specified router on an api instance
 func (api API) Router() routing.Routeable {
 	return api.router
 }

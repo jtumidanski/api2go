@@ -11,39 +11,39 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
-	"github.com/manyminds/api2go"
-	"github.com/manyminds/api2go/examples/model"
-	"github.com/manyminds/api2go/examples/resource"
-	"github.com/manyminds/api2go/examples/storage"
-	"github.com/manyminds/api2go/routing"
+	"github.com/jtumidanski/api2go"
+	"github.com/jtumidanski/api2go/examples/model"
+	"github.com/jtumidanski/api2go/examples/resource"
+	"github.com/jtumidanski/api2go/examples/storage"
+	"github.com/jtumidanski/api2go/routing"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("api2go with gorillamux router adapter", func() {
-	var (
-		router routing.Routeable
-		r      *mux.Router
-		api    *api2go.API
-		rec    *httptest.ResponseRecorder
+var (
+	router routing.Routeable
+	r      *mux.Router
+	api    *api2go.API
+	rec    *httptest.ResponseRecorder
+)
+
+var _ = BeforeSuite(func() {
+	r = mux.NewRouter()
+	router = routing.Gorilla(r)
+	api = api2go.NewAPIWithRouting(
+		"api",
+		api2go.NewStaticResolver("/"),
+		router,
 	)
 
-	BeforeSuite(func() {
-		r = mux.NewRouter()
-		router = routing.Gorilla(r)
-		api = api2go.NewAPIWithRouting(
-			"api",
-			api2go.NewStaticResolver("/"),
-			router,
-		)
+	userStorage := storage.NewUserStorage()
+	chocStorage := storage.NewChocolateStorage()
+	api.AddResource(model.User{}, resource.UserResource{ChocStorage: chocStorage, UserStorage: userStorage})
+	api.AddResource(model.Chocolate{}, resource.ChocolateResource{ChocStorage: chocStorage, UserStorage: userStorage})
+})
 
-		userStorage := storage.NewUserStorage()
-		chocStorage := storage.NewChocolateStorage()
-		api.AddResource(model.User{}, resource.UserResource{ChocStorage: chocStorage, UserStorage: userStorage})
-		api.AddResource(model.Chocolate{}, resource.ChocolateResource{ChocStorage: chocStorage, UserStorage: userStorage})
-	})
-
+var _ = Describe("api2go with gorillamux router adapter", func() {
 	BeforeEach(func() {
 		log.SetOutput(ioutil.Discard)
 		rec = httptest.NewRecorder()
