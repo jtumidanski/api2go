@@ -27,6 +27,9 @@ jobs:
         go get -u golang.org/x/lint/golint
         go get -u github.com/modocache/gover
         go get -u github.com/mattn/goveralls
+    - name: Setup Go path
+      run: |
+        echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
     - name: Run tests
       run: |
         ginkgo -r -cover --randomizeAllSpecs --randomizeSuites --failOnPending --trace --race --progress
