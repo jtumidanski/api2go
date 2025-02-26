@@ -36,7 +36,4 @@ jobs:
         ginkgo -tags=gorillamux -r --randomize-suites --fail-on-pending --trace
         ginkgo -tags=gingonic -r --randomize-suites --fail-on-pending --trace
         ginkgo -tags=echo -r --randomize-suites --fail-on-pending --trace
-        bash scripts/fmtpolice
-        gover
-        goveralls -coverprofile=gover.coverprofile -repotoken UWegKzoOH1o1QD9e5JKtvDt77JJc4lzVN
   
