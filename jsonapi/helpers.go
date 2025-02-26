@@ -1,6 +1,11 @@
 package jsonapi
 
 import (
+	"encoding/json"
+	"errors"
+	"net/http"
+	"net/url"
+	"regexp"
 	"strings"
 	"unicode"
 
@@ -62,4 +67,109 @@ func Jsonify(s string) string {
 // Pluralize returns the pluralization of a noun.
 func Pluralize(word string) string {
 	return inflector.Pluralize(word)
+}
+
+var (
+	queryFieldsRegex = regexp.MustCompile(`^fields\[(\w+)\]$`)
+)
+
+var ErrRequestedInvalidFields = errors.New("Some requested fields were invalid.")
+
+// FilterSparseFields returns a document with only the specific fields in the response on a per-type basis.
+// https://jsonapi.org/format/#fetching-sparse-fieldsets
+func FilterSparseFields(resp interface{}, r *http.Request) (interface{}, map[string][]string, error) {
+	wrongFields := map[string][]string{}
+
+	query := r.URL.Query()
+	queryParams := parseQueryFields(&query)
+	if len(queryParams) < 1 {
+		return resp, wrongFields, nil
+	}
+
+	var document *Document
+	var ok bool
+	if document, ok = resp.(*Document); !ok {
+		return resp, wrongFields, nil
+	}
+
+	// single entry in data
+	data := document.Data.DataObject
+	if data != nil {
+		errs := replaceAttributes(&queryParams, data)
+		for t, v := range errs {
+			wrongFields[t] = v
+		}
+	}
+
+	// data can be a slice too
+	datas := document.Data.DataArray
+	for index, data := range datas {
+		errs := replaceAttributes(&queryParams, &data)
+		for t, v := range errs {
+			wrongFields[t] = v
+		}
+		datas[index] = data
+	}
+
+	// included slice
+	for index, include := range document.Included {
+		errs := replaceAttributes(&queryParams, &include)
+		for t, v := range errs {
+			wrongFields[t] = v
+		}
+		document.Included[index] = include
+	}
+
+	if len(wrongFields) > 0 {
+		return resp, wrongFields, ErrRequestedInvalidFields
+	}
+	return resp, wrongFields, nil
+}
+
+func parseQueryFields(query *url.Values) (result map[string][]string) {
+	result = map[string][]string{}
+	for name, param := range *query {
+		matches := queryFieldsRegex.FindStringSubmatch(name)
+		if len(matches) > 1 {
+			match := matches[1]
+			result[match] = strings.Split(param[0], ",")
+		}
+	}
+
+	return
+}
+
+func filterAttributes(attributes map[string]interface{}, fields []string) (filteredAttributes map[string]interface{}, wrongFields []string) {
+	wrongFields = []string{}
+	filteredAttributes = map[string]interface{}{}
+
+	for _, field := range fields {
+		if attribute, ok := attributes[field]; ok {
+			filteredAttributes[field] = attribute
+		} else {
+			wrongFields = append(wrongFields, field)
+		}
+	}
+
+	return
+}
+
+func replaceAttributes(query *map[string][]string, entry *Data) map[string][]string {
+	fieldType := entry.Type
+	attributes := map[string]interface{}{}
+	_ = json.Unmarshal(entry.Attributes, &attributes)
+	fields := (*query)[fieldType]
+	if len(fields) > 0 {
+		var wrongFields []string
+		attributes, wrongFields = filterAttributes(attributes, fields)
+		if len(wrongFields) > 0 {
+			return map[string][]string{
+				fieldType: wrongFields,
+			}
+		}
+		bytes, _ := json.Marshal(attributes)
+		entry.Attributes = bytes
+	}
+
+	return nil
 }

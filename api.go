@@ -23,8 +23,7 @@ const (
 )
 
 var (
-	queryPageRegex   = regexp.MustCompile(`^page\[(\w+)\]$`)
-	queryFieldsRegex = regexp.MustCompile(`^fields\[(\w+)\]$`)
+	queryPageRegex = regexp.MustCompile(`^page\[(\w+)\]$`)
 )
 
 type information struct {
@@ -518,10 +517,28 @@ func buildRequest(c APIContexter, r *http.Request) Request {
 	return req
 }
 
+func produceInvalidQueryFieldsErr(wrongFields map[string][]string) error {
+	httpError := NewHTTPError(nil, "Some requested fields were invalid", http.StatusBadRequest)
+	for k, v := range wrongFields {
+		for _, field := range v {
+			httpError.Errors = append(httpError.Errors, Error{
+				Status: "Bad Request",
+				Code:   codeInvalidQueryFields,
+				Title:  fmt.Sprintf(`Field "%s" does not exist for type "%s"`, field, k),
+				Detail: "Please make sure you do only request existing fields",
+				Source: &ErrorSource{
+					Parameter: fmt.Sprintf("fields[%s]", k),
+				},
+			})
+		}
+	}
+	return httpError
+}
+
 func (res *resource) marshalResponse(resp interface{}, w http.ResponseWriter, status int, r *http.Request) error {
-	filtered, err := filterSparseFields(resp, r)
-	if err != nil {
-		return err
+	filtered, wrongFields, err := jsonapi.FilterSparseFields(resp, r)
+	if errors.Is(err, jsonapi.ErrRequestedInvalidFields) {
+		return produceInvalidQueryFieldsErr(wrongFields)
 	}
 	result, err := json.Marshal(filtered)
 	if err != nil {
@@ -1106,113 +1123,6 @@ func unmarshalRequest(r *http.Request) ([]byte, error) {
 		return nil, err
 	}
 	return data, nil
-}
-
-func filterSparseFields(resp interface{}, r *http.Request) (interface{}, error) {
-	query := r.URL.Query()
-	queryParams := parseQueryFields(&query)
-	if len(queryParams) < 1 {
-		return resp, nil
-	}
-
-	if document, ok := resp.(*jsonapi.Document); ok {
-		wrongFields := map[string][]string{}
-
-		// single entry in data
-		data := document.Data.DataObject
-		if data != nil {
-			errors := replaceAttributes(&queryParams, data)
-			for t, v := range errors {
-				wrongFields[t] = v
-			}
-		}
-
-		// data can be a slice too
-		datas := document.Data.DataArray
-		for index, data := range datas {
-			errors := replaceAttributes(&queryParams, &data)
-			for t, v := range errors {
-				wrongFields[t] = v
-			}
-			datas[index] = data
-		}
-
-		// included slice
-		for index, include := range document.Included {
-			errors := replaceAttributes(&queryParams, &include)
-			for t, v := range errors {
-				wrongFields[t] = v
-			}
-			document.Included[index] = include
-		}
-
-		if len(wrongFields) > 0 {
-			httpError := NewHTTPError(nil, "Some requested fields were invalid", http.StatusBadRequest)
-			for k, v := range wrongFields {
-				for _, field := range v {
-					httpError.Errors = append(httpError.Errors, Error{
-						Status: "Bad Request",
-						Code:   codeInvalidQueryFields,
-						Title:  fmt.Sprintf(`Field "%s" does not exist for type "%s"`, field, k),
-						Detail: "Please make sure you do only request existing fields",
-						Source: &ErrorSource{
-							Parameter: fmt.Sprintf("fields[%s]", k),
-						},
-					})
-				}
-			}
-			return nil, httpError
-		}
-	}
-	return resp, nil
-}
-
-func parseQueryFields(query *url.Values) (result map[string][]string) {
-	result = map[string][]string{}
-	for name, param := range *query {
-		matches := queryFieldsRegex.FindStringSubmatch(name)
-		if len(matches) > 1 {
-			match := matches[1]
-			result[match] = strings.Split(param[0], ",")
-		}
-	}
-
-	return
-}
-
-func filterAttributes(attributes map[string]interface{}, fields []string) (filteredAttributes map[string]interface{}, wrongFields []string) {
-	wrongFields = []string{}
-	filteredAttributes = map[string]interface{}{}
-
-	for _, field := range fields {
-		if attribute, ok := attributes[field]; ok {
-			filteredAttributes[field] = attribute
-		} else {
-			wrongFields = append(wrongFields, field)
-		}
-	}
-
-	return
-}
-
-func replaceAttributes(query *map[string][]string, entry *jsonapi.Data) map[string][]string {
-	fieldType := entry.Type
-	attributes := map[string]interface{}{}
-	_ = json.Unmarshal(entry.Attributes, &attributes)
-	fields := (*query)[fieldType]
-	if len(fields) > 0 {
-		var wrongFields []string
-		attributes, wrongFields = filterAttributes(attributes, fields)
-		if len(wrongFields) > 0 {
-			return map[string][]string{
-				fieldType: wrongFields,
-			}
-		}
-		bytes, _ := json.Marshal(attributes)
-		entry.Attributes = bytes
-	}
-
-	return nil
 }
 
 func handleError(err error, w http.ResponseWriter, r *http.Request, contentType string) {
