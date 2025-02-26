@@ -45,12 +45,12 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/jtumidanski/api2go"
+	"github.com/jtumidanski/api2go/examples/model"
+	"github.com/jtumidanski/api2go/examples/resolver"
+	"github.com/jtumidanski/api2go/examples/resource"
+	"github.com/jtumidanski/api2go/examples/storage"
 	"github.com/julienschmidt/httprouter"
-	"github.com/manyminds/api2go"
-	"github.com/manyminds/api2go/examples/model"
-	"github.com/manyminds/api2go/examples/resolver"
-	"github.com/manyminds/api2go/examples/resource"
-	"github.com/manyminds/api2go/examples/storage"
 )
 
 func main() {

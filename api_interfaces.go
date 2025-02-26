@@ -3,7 +3,7 @@ package api2go
 import (
 	"net/http"
 
-	"github.com/manyminds/api2go/jsonapi"
+	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 // The ResourceGetter interface MUST be implemented in order to generate the single GET route and related
@@ -84,9 +84,9 @@ type ObjectInitializer interface {
 	InitializeObject(interface{})
 }
 
-//URLResolver allows you to implement a static
-//way to return a baseURL for all incoming
-//requests for one api2go instance.
+// URLResolver allows you to implement a static
+// way to return a baseURL for all incoming
+// requests for one api2go instance.
 type URLResolver interface {
 	GetBaseURL() string
 }
