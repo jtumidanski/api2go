@@ -9,7 +9,7 @@ import (
 	"github.com/jtumidanski/api2go/examples/model"
 	"github.com/jtumidanski/api2go/examples/resource"
 	"github.com/jtumidanski/api2go/examples/storage"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 

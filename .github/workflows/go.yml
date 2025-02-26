@@ -23,7 +23,7 @@ jobs:
     - name: Install dependencies
       run: |
         go get -t -d -v ./...
-        go install github.com/onsi/ginkgo/ginkgo@latest
+        go install github.com/onsi/ginkgo/v2/ginkgo@latest
         go get -u golang.org/x/lint/golint
         go get -u github.com/modocache/gover
         go get -u github.com/mattn/goveralls
@@ -32,11 +32,10 @@ jobs:
         echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
     - name: Run tests
       run: |
-        ginkgo -r -cover --randomizeAllSpecs --randomizeSuites --failOnPending --trace --race --progress
-        ginkgo -tags=gorillamux -r --randomizeSuites --failOnPending --trace --race
-        ginkgo -tags=gingonic -r --randomizeSuites --failOnPending --trace --race
-        ginkgo -tags=echo -r --randomizeSuites --failOnPending --trace --race
-        rm examples/examples.coverprofile
+        ginkgo -r -cover --randomize-all --randomize-suites --fail-on-pending --trace --show-node-events
+        ginkgo -tags=gorillamux -r --randomize-suites --fail-on-pending --trace
+        ginkgo -tags=gingonic -r --randomize-suites --fail-on-pending --trace
+        ginkgo -tags=echo -r --randomize-suites --fail-on-pending --trace
         bash scripts/fmtpolice
         gover
         goveralls -coverprofile=gover.coverprofile -repotoken UWegKzoOH1o1QD9e5JKtvDt77JJc4lzVN
