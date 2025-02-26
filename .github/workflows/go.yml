@@ -39,5 +39,5 @@ jobs:
         rm examples/examples.coverprofile
         bash scripts/fmtpolice
         gover
-        goveralls -coverprofile=gover.coverprofile -repotoken gY90SprlNRGmSMl7MgybLreYa05wUXJTU
+        goveralls -coverprofile=gover.coverprofile -repotoken UWegKzoOH1o1QD9e5JKtvDt77JJc4lzVN
   
