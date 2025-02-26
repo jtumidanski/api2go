@@ -1,0 +1,12 @@
+{
+  "extends": ["config:default"],
+  "enabled": true,
+  "dependencyDashboard": true,
+  "automerge": true,
+  "packageRules": [
+    {
+      "packagePatterns": ["^github.com/.*"],
+      "enabled": true
+    }
+  ]
+}
