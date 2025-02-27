@@ -231,6 +231,12 @@ type UnmarshalToOneRelations interface {
 type UnmarshalToManyRelations interface {
 	SetToManyReferenceIDs(name string, IDs []string) error
 }
+
+// UnmarshalIncludedRelations must be implemented to unmarshal included reference structs
+type UnmarshalIncludedRelations interface {
+    MarshalIdentifier
+    SetReferencedStructs(references []Data) error
+}
 ```
 
 **If you need to know more about how to use the interfaces, look at our tests or at the example project.**
