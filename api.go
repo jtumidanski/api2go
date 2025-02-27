@@ -518,7 +518,10 @@ func buildRequest(c APIContexter, r *http.Request) Request {
 }
 
 func (res *resource) marshalResponse(resp interface{}, w http.ResponseWriter, status int, r *http.Request) error {
-	filtered, errs := jsonapi.FilterSparseFields(resp, r)
+	query := r.URL.Query()
+	queryParams := jsonapi.ParseQueryFields(&query)
+
+	filtered, errs := jsonapi.FilterSparseFields(resp, queryParams)
 	if errs != nil {
 		httpError := NewHTTPError(nil, "Some requested fields were invalid", http.StatusBadRequest)
 		httpError.Errors = errs

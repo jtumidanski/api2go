@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
@@ -82,14 +81,12 @@ const (
 
 // FilterSparseFields returns a document with only the specific fields in the response on a per-type basis.
 // https://jsonapi.org/format/#fetching-sparse-fieldsets
-func FilterSparseFields(resp interface{}, r *http.Request) (interface{}, []Error) {
-	wrongFields := map[string][]string{}
-
-	query := r.URL.Query()
-	queryParams := ParseQueryFields(&query)
+func FilterSparseFields(resp interface{}, queryParams map[string][]string) (interface{}, []Error) {
 	if len(queryParams) < 1 {
 		return resp, nil
 	}
+
+	wrongFields := map[string][]string{}
 
 	var document *Document
 	var ok bool
