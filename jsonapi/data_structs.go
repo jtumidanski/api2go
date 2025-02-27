@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 )
 
 var objectSuffix = []byte("{")
@@ -169,18 +168,6 @@ type RelationshipData struct {
 	ID   string `json:"id"`
 }
 
-// HTTPError is used for errors
-type HTTPError struct {
-	err    error
-	msg    string
-	status int
-	Errors []Error `json:"errors,omitempty"`
-}
-
-func (h HTTPError) Status() int {
-	return h.status
-}
-
 // Error can be used for all kind of application errors
 // e.g. you would use it to define form errors or any
 // other semantical application problems
@@ -214,21 +201,4 @@ type ErrorLinks struct {
 type ErrorSource struct {
 	Pointer   string `json:"pointer,omitempty"`
 	Parameter string `json:"parameter,omitempty"`
-}
-
-// NewHTTPError creates a new error with message and status code.
-// `err` will be logged (but never sent to a client), `msg` will be sent and `status` is the http status code.
-// `err` can be nil.
-func NewHTTPError(err error, msg string, status int) HTTPError {
-	return HTTPError{err: err, msg: msg, status: status}
-}
-
-// Error returns a nice string represenation including the status
-func (e HTTPError) Error() string {
-	msg := fmt.Sprintf("http error (%d) %s and %d more errors", e.status, e.msg, len(e.Errors))
-	if e.err != nil {
-		msg += ", " + e.err.Error()
-	}
-
-	return msg
 }

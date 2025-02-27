@@ -3,6 +3,7 @@ package jsonapi
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -75,21 +76,25 @@ var (
 
 var ErrRequestedInvalidFields = errors.New("Some requested fields were invalid.")
 
+const (
+	codeInvalidQueryFields = "API2GO_INVALID_FIELD_QUERY_PARAM"
+)
+
 // FilterSparseFields returns a document with only the specific fields in the response on a per-type basis.
 // https://jsonapi.org/format/#fetching-sparse-fieldsets
-func FilterSparseFields(resp interface{}, r *http.Request) (interface{}, map[string][]string, error) {
+func FilterSparseFields(resp interface{}, r *http.Request) (interface{}, []Error) {
 	wrongFields := map[string][]string{}
 
 	query := r.URL.Query()
-	queryParams := parseQueryFields(&query)
+	queryParams := ParseQueryFields(&query)
 	if len(queryParams) < 1 {
-		return resp, wrongFields, nil
+		return resp, nil
 	}
 
 	var document *Document
 	var ok bool
 	if document, ok = resp.(*Document); !ok {
-		return resp, wrongFields, nil
+		return resp, nil
 	}
 
 	// single entry in data
@@ -121,12 +126,29 @@ func FilterSparseFields(resp interface{}, r *http.Request) (interface{}, map[str
 	}
 
 	if len(wrongFields) > 0 {
-		return resp, wrongFields, ErrRequestedInvalidFields
+		var errs []Error
+		//httpError := NewHTTPError(nil, "Some requested fields were invalid", http.StatusBadRequest)
+		for k, v := range wrongFields {
+			for _, field := range v {
+				errs = append(errs, Error{
+					Status: "Bad Request",
+					Code:   codeInvalidQueryFields,
+					Title:  fmt.Sprintf(`Field "%s" does not exist for type "%s"`, field, k),
+					Detail: "Please make sure you do only request existing fields",
+					Source: &ErrorSource{
+						Parameter: fmt.Sprintf("fields[%s]", k),
+					},
+				})
+			}
+		}
+		return nil, errs
 	}
-	return resp, wrongFields, nil
+	return resp, nil
 }
 
-func parseQueryFields(query *url.Values) (result map[string][]string) {
+// ParseQueryFields returns a map containing lists of field name(s) to be returned by resource type.
+// https://jsonapi.org/format/#fetching-sparse-fieldsets
+func ParseQueryFields(query *url.Values) (result map[string][]string) {
 	result = map[string][]string{}
 	for name, param := range *query {
 		matches := queryFieldsRegex.FindStringSubmatch(name)

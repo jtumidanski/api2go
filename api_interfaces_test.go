@@ -41,9 +41,9 @@ func (s SomeResource) Create(obj interface{}, req Request) (Responder, error) {
 	case "accept":
 		return &Response{Res: SomeData{ID: "someID"}, Code: http.StatusAccepted}, nil
 	case "forbidden":
-		return &Response{}, jsonapi.NewHTTPError(nil, "Forbidden", http.StatusForbidden)
+		return &Response{}, NewHTTPError(nil, "Forbidden", http.StatusForbidden)
 	case "conflict":
-		return &Response{}, jsonapi.NewHTTPError(nil, "Conflict", http.StatusConflict)
+		return &Response{}, NewHTTPError(nil, "Conflict", http.StatusConflict)
 	case "invalid":
 		return &Response{Res: SomeData{}, Code: http.StatusTeapot}, nil
 	default:
@@ -72,7 +72,7 @@ func (s SomeResource) Update(obj interface{}, req Request) (Responder, error) {
 	case "new value":
 		return &Response{Code: http.StatusNoContent}, nil
 	case "fail":
-		return &Response{}, jsonapi.NewHTTPError(nil, "Fail", http.StatusForbidden)
+		return &Response{}, NewHTTPError(nil, "Fail", http.StatusForbidden)
 	case "invalid":
 		return &Response{Code: http.StatusTeapot}, nil
 	default:
@@ -190,7 +190,7 @@ var _ = Describe("Test return code behavior", func() {
 		It("does not accept invalid return codes", func() {
 			post(SomeData{ID: "invalid"})
 			Expect(rec.Code).To(Equal(http.StatusInternalServerError))
-			var err jsonapi.HTTPError
+			var err HTTPError
 			json.Unmarshal(rec.Body.Bytes(), &err)
 			Expect(err.Errors[0]).To(Equal(jsonapi.Error{
 				Title:  "invalid status code 418 from resource someDatas for method Create",
@@ -200,7 +200,7 @@ var _ = Describe("Test return code behavior", func() {
 		It("handles forbidden 403 error", func() {
 			post(SomeData{ID: "forbidden", Data: "i am so forbidden"})
 			Expect(rec.Code).To(Equal(http.StatusForbidden))
-			var err jsonapi.HTTPError
+			var err HTTPError
 			json.Unmarshal(rec.Body.Bytes(), &err)
 			Expect(err.Errors[0]).To(Equal(jsonapi.Error{Title: "Forbidden", Status: strconv.Itoa(http.StatusForbidden)}))
 		})
@@ -208,7 +208,7 @@ var _ = Describe("Test return code behavior", func() {
 		It("handles 409 conflict error", func() {
 			post(SomeData{ID: "conflict", Data: "no force push here"})
 			Expect(rec.Code).To(Equal(http.StatusConflict))
-			var err jsonapi.HTTPError
+			var err HTTPError
 			json.Unmarshal(rec.Body.Bytes(), &err)
 			Expect(err.Errors[0]).To(Equal(jsonapi.Error{Title: "Conflict", Status: strconv.Itoa(http.StatusConflict)}))
 		})
@@ -247,7 +247,7 @@ var _ = Describe("Test return code behavior", func() {
 		It("does not accept invalid return codes", func() {
 			patch(SomeData{ID: "12345", Data: "invalid"})
 			Expect(rec.Code).To(Equal(http.StatusInternalServerError))
-			var err jsonapi.HTTPError
+			var err HTTPError
 			json.Unmarshal(rec.Body.Bytes(), &err)
 			Expect(err.Errors[0]).To(Equal(jsonapi.Error{
 				Title:  "invalid status code 418 from resource someDatas for method Update",
@@ -259,7 +259,7 @@ var _ = Describe("Test return code behavior", func() {
 		It("handles error cases", func() {
 			patch(SomeData{ID: "12345", Data: "fail"})
 			Expect(rec.Code).To(Equal(http.StatusForbidden), "we do not allow failes here!")
-			var err jsonapi.HTTPError
+			var err HTTPError
 			json.Unmarshal(rec.Body.Bytes(), &err)
 			Expect(err.Errors[0]).To(Equal(jsonapi.Error{Title: "Fail", Status: strconv.Itoa(http.StatusForbidden)}))
 		})

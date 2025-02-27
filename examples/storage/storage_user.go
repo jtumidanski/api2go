@@ -3,7 +3,7 @@ package storage
 import (
 	"errors"
 	"fmt"
-	"github.com/jtumidanski/api2go/jsonapi"
+	"github.com/jtumidanski/api2go"
 	"net/http"
 
 	"github.com/jtumidanski/api2go/examples/model"
@@ -32,7 +32,7 @@ func (s UserStorage) GetOne(id string) (model.User, error) {
 		return *user, nil
 	}
 	errMessage := fmt.Sprintf("User for id %s not found", id)
-	return model.User{}, jsonapi.NewHTTPError(errors.New(errMessage), errMessage, http.StatusNotFound)
+	return model.User{}, api2go.NewHTTPError(errors.New(errMessage), errMessage, http.StatusNotFound)
 }
 
 // Insert a user

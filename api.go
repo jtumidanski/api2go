@@ -169,7 +169,7 @@ type notAllowedHandler struct {
 }
 
 func (n notAllowedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	err := jsonapi.NewHTTPError(nil, "Method Not Allowed", http.StatusMethodNotAllowed)
+	err := NewHTTPError(nil, "Method Not Allowed", http.StatusMethodNotAllowed)
 	w.WriteHeader(http.StatusMethodNotAllowed)
 
 	contentType := defaultContentTypHeader
@@ -517,29 +517,14 @@ func buildRequest(c APIContexter, r *http.Request) Request {
 	return req
 }
 
-func produceInvalidQueryFieldsErr(wrongFields map[string][]string) error {
-	httpError := jsonapi.NewHTTPError(nil, "Some requested fields were invalid", http.StatusBadRequest)
-	for k, v := range wrongFields {
-		for _, field := range v {
-			httpError.Errors = append(httpError.Errors, jsonapi.Error{
-				Status: "Bad Request",
-				Code:   codeInvalidQueryFields,
-				Title:  fmt.Sprintf(`Field "%s" does not exist for type "%s"`, field, k),
-				Detail: "Please make sure you do only request existing fields",
-				Source: &jsonapi.ErrorSource{
-					Parameter: fmt.Sprintf("fields[%s]", k),
-				},
-			})
-		}
-	}
-	return httpError
-}
-
 func (res *resource) marshalResponse(resp interface{}, w http.ResponseWriter, status int, r *http.Request) error {
-	filtered, wrongFields, err := jsonapi.FilterSparseFields(resp, r)
-	if errors.Is(err, jsonapi.ErrRequestedInvalidFields) {
-		return produceInvalidQueryFieldsErr(wrongFields)
+	filtered, errs := jsonapi.FilterSparseFields(resp, r)
+	if errs != nil {
+		httpError := NewHTTPError(nil, "Some requested fields were invalid", http.StatusBadRequest)
+		httpError.Errors = errs
+		return httpError
 	}
+
 	result, err := json.Marshal(filtered)
 	if err != nil {
 		return err
@@ -569,7 +554,7 @@ func (res *resource) handleIndex(c APIContexter, w http.ResponseWriter, r *http.
 
 	source, ok := res.source.(FindAll)
 	if !ok {
-		return jsonapi.NewHTTPError(nil, "Resource does not implement the FindAll interface", http.StatusNotFound)
+		return NewHTTPError(nil, "Resource does not implement the FindAll interface", http.StatusNotFound)
 	}
 
 	response, err := source.FindAll(buildRequest(c, r))
@@ -619,7 +604,7 @@ func (res *resource) handleReadRelation(c APIContexter, w http.ResponseWriter, r
 
 	rel, ok := document.Data.DataObject.Relationships[relation.Name]
 	if !ok {
-		return jsonapi.NewHTTPError(nil, fmt.Sprintf("There is no relation with the name %s", relation.Name), http.StatusNotFound)
+		return NewHTTPError(nil, fmt.Sprintf("There is no relation with the name %s", relation.Name), http.StatusNotFound)
 	}
 
 	meta := obj.Metadata()
@@ -660,7 +645,7 @@ func (res *resource) handleLinked(c APIContexter, api *API, w http.ResponseWrite
 
 			source, ok := resource.source.(FindAll)
 			if !ok {
-				return jsonapi.NewHTTPError(nil, "Resource does not implement the FindAll interface", http.StatusNotFound)
+				return NewHTTPError(nil, "Resource does not implement the FindAll interface", http.StatusNotFound)
 			}
 
 			obj, err := source.FindAll(request)
@@ -671,7 +656,7 @@ func (res *resource) handleLinked(c APIContexter, api *API, w http.ResponseWrite
 		}
 	}
 
-	return jsonapi.NewHTTPError(
+	return NewHTTPError(
 		errors.New("Not Found"),
 		"No resource handler is registered to handle the linked resource "+linked.Name,
 		http.StatusNotFound,
@@ -706,7 +691,7 @@ func (res *resource) handleCreate(c APIContexter, w http.ResponseWriter, r *http
 
 	err = jsonapi.Unmarshal(ctx, newObj)
 	if err != nil {
-		return jsonapi.NewHTTPError(nil, err.Error(), http.StatusNotAcceptable)
+		return NewHTTPError(nil, err.Error(), http.StatusNotAcceptable)
 	}
 
 	var response Responder
@@ -777,13 +762,13 @@ func (res *resource) handleUpdate(c APIContexter, w http.ResponseWriter, r *http
 		err = jsonapi.Unmarshal(ctx, updatingObj.Interface())
 	}
 	if err != nil {
-		return jsonapi.NewHTTPError(nil, err.Error(), http.StatusNotAcceptable)
+		return NewHTTPError(nil, err.Error(), http.StatusNotAcceptable)
 	}
 
 	identifiable, ok := updatingObj.Interface().(jsonapi.MarshalIdentifier)
 	if !ok || identifiable.GetID() != id {
 		conflictError := errors.New("id in the resource does not match servers endpoint")
-		return jsonapi.NewHTTPError(conflictError, conflictError.Error(), http.StatusConflict)
+		return NewHTTPError(conflictError, conflictError.Error(), http.StatusConflict)
 	}
 
 	response, err := source.Update(updatingObj.Interface(), buildRequest(c, r))
@@ -1127,14 +1112,14 @@ func unmarshalRequest(r *http.Request) ([]byte, error) {
 
 func handleError(err error, w http.ResponseWriter, r *http.Request, contentType string) {
 	log.Println(err)
-	if e, ok := err.(jsonapi.HTTPError); ok {
-		writeResult(w, []byte(jsonapi.MarshalHTTPError(e)), e.Status(), contentType)
+	if e, ok := err.(HTTPError); ok {
+		writeResult(w, []byte(marshalHTTPError(e)), e.Status(), contentType)
 		return
 
 	}
 
-	e := jsonapi.NewHTTPError(err, err.Error(), http.StatusInternalServerError)
-	writeResult(w, []byte(jsonapi.MarshalHTTPError(e)), http.StatusInternalServerError, contentType)
+	e := NewHTTPError(err, err.Error(), http.StatusInternalServerError)
+	writeResult(w, []byte(marshalHTTPError(e)), http.StatusInternalServerError, contentType)
 }
 
 // TODO: this can also be replaced with a struct into that we directly json.Unmarshal

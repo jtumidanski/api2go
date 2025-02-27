@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
 )
 
@@ -458,19 +457,4 @@ func getStructType(data interface{}) string {
 	}
 
 	return Pluralize(Jsonify(reflectType.Name()))
-}
-
-// MarshalHTTPError marshals an internal httpError
-func MarshalHTTPError(input HTTPError) string {
-	if len(input.Errors) == 0 {
-		input.Errors = []Error{{Title: input.msg, Status: strconv.Itoa(input.status)}}
-	}
-
-	data, err := json.Marshal(input)
-
-	if err != nil {
-		return "{}"
-	}
-
-	return string(data)
 }
