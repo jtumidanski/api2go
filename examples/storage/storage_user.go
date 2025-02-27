@@ -3,9 +3,9 @@ package storage
 import (
 	"errors"
 	"fmt"
+	"github.com/jtumidanski/api2go"
 	"net/http"
 
-	"github.com/jtumidanski/api2go"
 	"github.com/jtumidanski/api2go/examples/model"
 )
 

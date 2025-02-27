@@ -517,29 +517,17 @@ func buildRequest(c APIContexter, r *http.Request) Request {
 	return req
 }
 
-func produceInvalidQueryFieldsErr(wrongFields map[string][]string) error {
-	httpError := NewHTTPError(nil, "Some requested fields were invalid", http.StatusBadRequest)
-	for k, v := range wrongFields {
-		for _, field := range v {
-			httpError.Errors = append(httpError.Errors, Error{
-				Status: "Bad Request",
-				Code:   codeInvalidQueryFields,
-				Title:  fmt.Sprintf(`Field "%s" does not exist for type "%s"`, field, k),
-				Detail: "Please make sure you do only request existing fields",
-				Source: &ErrorSource{
-					Parameter: fmt.Sprintf("fields[%s]", k),
-				},
-			})
-		}
-	}
-	return httpError
-}
-
 func (res *resource) marshalResponse(resp interface{}, w http.ResponseWriter, status int, r *http.Request) error {
-	filtered, wrongFields, err := jsonapi.FilterSparseFields(resp, r)
-	if errors.Is(err, jsonapi.ErrRequestedInvalidFields) {
-		return produceInvalidQueryFieldsErr(wrongFields)
+	query := r.URL.Query()
+	queryParams := jsonapi.ParseQueryFields(&query)
+
+	filtered, errs := jsonapi.FilterSparseFields(resp, queryParams)
+	if errs != nil {
+		httpError := NewHTTPError(nil, "Some requested fields were invalid", http.StatusBadRequest)
+		httpError.Errors = errs
+		return httpError
 	}
+
 	result, err := json.Marshal(filtered)
 	if err != nil {
 		return err
@@ -1128,7 +1116,7 @@ func unmarshalRequest(r *http.Request) ([]byte, error) {
 func handleError(err error, w http.ResponseWriter, r *http.Request, contentType string) {
 	log.Println(err)
 	if e, ok := err.(HTTPError); ok {
-		writeResult(w, []byte(marshalHTTPError(e)), e.status, contentType)
+		writeResult(w, []byte(marshalHTTPError(e)), e.Status(), contentType)
 		return
 
 	}

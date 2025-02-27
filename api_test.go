@@ -327,7 +327,7 @@ func (s *fixtureSource) Create(obj interface{}, req Request) (Responder, error) 
 
 	if p.Title == "" {
 		err := NewHTTPError(errors.New("Bad request"), "Bad Request", http.StatusBadRequest)
-		err.Errors = append(err.Errors, Error{ID: "SomeErrorID", Source: &ErrorSource{Pointer: "Title"}})
+		err.Errors = append(err.Errors, jsonapi.Error{ID: "SomeErrorID", Source: &jsonapi.ErrorSource{Pointer: "Title"}})
 		return &Response{}, err
 	}
 
@@ -1743,13 +1743,13 @@ var _ = Describe("RestHandler", func() {
 			err = json.Unmarshal(rec.Body.Bytes(), &error)
 			Expect(err).ToNot(HaveOccurred())
 
-			expectedError := func(field, objType string) Error {
-				return Error{
+			expectedError := func(field, objType string) jsonapi.Error {
+				return jsonapi.Error{
 					Status: "Bad Request",
 					Code:   codeInvalidQueryFields,
 					Title:  fmt.Sprintf(`Field "%s" does not exist for type "%s"`, field, objType),
 					Detail: "Please make sure you do only request existing fields",
-					Source: &ErrorSource{
+					Source: &jsonapi.ErrorSource{
 						Parameter: fmt.Sprintf("fields[%s]", objType),
 					},
 				}

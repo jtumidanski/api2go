@@ -192,7 +192,7 @@ var _ = Describe("Test return code behavior", func() {
 			Expect(rec.Code).To(Equal(http.StatusInternalServerError))
 			var err HTTPError
 			json.Unmarshal(rec.Body.Bytes(), &err)
-			Expect(err.Errors[0]).To(Equal(Error{
+			Expect(err.Errors[0]).To(Equal(jsonapi.Error{
 				Title:  "invalid status code 418 from resource someDatas for method Create",
 				Status: strconv.Itoa(http.StatusInternalServerError)}))
 		})
@@ -202,7 +202,7 @@ var _ = Describe("Test return code behavior", func() {
 			Expect(rec.Code).To(Equal(http.StatusForbidden))
 			var err HTTPError
 			json.Unmarshal(rec.Body.Bytes(), &err)
-			Expect(err.Errors[0]).To(Equal(Error{Title: "Forbidden", Status: strconv.Itoa(http.StatusForbidden)}))
+			Expect(err.Errors[0]).To(Equal(jsonapi.Error{Title: "Forbidden", Status: strconv.Itoa(http.StatusForbidden)}))
 		})
 
 		It("handles 409 conflict error", func() {
@@ -210,7 +210,7 @@ var _ = Describe("Test return code behavior", func() {
 			Expect(rec.Code).To(Equal(http.StatusConflict))
 			var err HTTPError
 			json.Unmarshal(rec.Body.Bytes(), &err)
-			Expect(err.Errors[0]).To(Equal(Error{Title: "Conflict", Status: strconv.Itoa(http.StatusConflict)}))
+			Expect(err.Errors[0]).To(Equal(jsonapi.Error{Title: "Conflict", Status: strconv.Itoa(http.StatusConflict)}))
 		})
 	})
 
@@ -249,7 +249,7 @@ var _ = Describe("Test return code behavior", func() {
 			Expect(rec.Code).To(Equal(http.StatusInternalServerError))
 			var err HTTPError
 			json.Unmarshal(rec.Body.Bytes(), &err)
-			Expect(err.Errors[0]).To(Equal(Error{
+			Expect(err.Errors[0]).To(Equal(jsonapi.Error{
 				Title:  "invalid status code 418 from resource someDatas for method Update",
 				Status: strconv.Itoa(http.StatusInternalServerError)}))
 		})
@@ -261,7 +261,7 @@ var _ = Describe("Test return code behavior", func() {
 			Expect(rec.Code).To(Equal(http.StatusForbidden), "we do not allow failes here!")
 			var err HTTPError
 			json.Unmarshal(rec.Body.Bytes(), &err)
-			Expect(err.Errors[0]).To(Equal(Error{Title: "Fail", Status: strconv.Itoa(http.StatusForbidden)}))
+			Expect(err.Errors[0]).To(Equal(jsonapi.Error{Title: "Fail", Status: strconv.Itoa(http.StatusForbidden)}))
 		})
 
 	})

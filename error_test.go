@@ -2,10 +2,10 @@ package api2go
 
 import (
 	"errors"
-	"net/http"
-
+	"github.com/jtumidanski/api2go/jsonapi"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"net/http"
 )
 
 type ErrorMarshaler struct{}
@@ -26,7 +26,7 @@ var _ = Describe("Errors test", func() {
 		It("can create array tree", func() {
 			httpErr := NewHTTPError(errors.New("hi"), "hi", 0)
 			for i := 0; i < 20; i++ {
-				httpErr.Errors = append(httpErr.Errors, Error{})
+				httpErr.Errors = append(httpErr.Errors, jsonapi.Error{})
 			}
 
 			Expect(len(httpErr.Errors)).To(Equal(20))
@@ -51,16 +51,16 @@ var _ = Describe("Errors test", func() {
 		It("will be marshalled correctly with child errors", func() {
 			httpErr := NewHTTPError(errors.New("Bad Request"), "Bad Request", 500)
 
-			errorOne := Error{
+			errorOne := jsonapi.Error{
 				ID: "001",
-				Links: &ErrorLinks{
+				Links: &jsonapi.ErrorLinks{
 					About: "http://bla/blub",
 				},
 				Status: "500",
 				Code:   "001",
 				Title:  "Title must not be empty",
 				Detail: "Never occures in real life",
-				Source: &ErrorSource{
+				Source: &jsonapi.ErrorSource{
 					Pointer: "#titleField",
 				},
 				Meta: map[string]interface{}{
@@ -78,7 +78,7 @@ var _ = Describe("Errors test", func() {
 		It("will be marshalled correctly with child errors without links or source", func() {
 			httpErr := NewHTTPError(errors.New("Bad Request"), "Bad Request", 500)
 
-			errorOne := Error{
+			errorOne := jsonapi.Error{
 				ID:     "001",
 				Status: "500",
 				Code:   "001",
