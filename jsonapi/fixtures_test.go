@@ -211,24 +211,6 @@ func (c *Post) SetToManyReferenceIDs(name string, IDs []string) error {
 	return errors.New("There is no to-many relationship named " + name)
 }
 
-func (c *Post) SetReferencedIDs(ids []ReferenceID) error {
-	for _, reference := range ids {
-		intID, err := strconv.ParseInt(reference.ID, 10, 64)
-		if err != nil {
-			return err
-		}
-
-		switch reference.Name {
-		case "comments":
-			c.CommentsIDs = append(c.CommentsIDs, int(intID))
-		case "author":
-			c.AuthorID = sql.NullInt64{Valid: true, Int64: intID}
-		}
-	}
-
-	return nil
-}
-
 func (c Post) GetReferencedIDs() []ReferenceID {
 	result := []ReferenceID{}
 
@@ -267,7 +249,54 @@ func (c Post) GetReferencedStructs() []MarshalIdentifier {
 	return result
 }
 
-func (c *Post) SetReferencedStructs(references []UnmarshalIdentifier) error {
+func (c *Post) SetReferencedStructs(references []Data) error {
+	var comments []Comment
+	for _, ref := range references {
+		if ref.Type == "comments" {
+			related := false
+			for _, cid := range c.CommentsIDs {
+				if strconv.Itoa(cid) == ref.ID {
+					related = true
+				}
+			}
+			if !related {
+				continue
+			}
+
+			co := Comment{}
+			err := json.Unmarshal(ref.Attributes, &co)
+			if err != nil {
+				return err
+			}
+			err = co.SetID(ref.ID)
+			if err != nil {
+				return err
+			}
+			comments = append(comments, co)
+		}
+		if ref.Type == "users" {
+			intID, err := strconv.ParseInt(ref.ID, 10, 64)
+			if err != nil {
+				return err
+			}
+			val := sql.NullInt64{Valid: true, Int64: intID}
+			if c.AuthorID != val {
+				continue
+			}
+
+			us := &User{}
+			err = json.Unmarshal(ref.Attributes, us)
+			if err != nil {
+				return err
+			}
+			err = us.SetID(ref.ID)
+			if err != nil {
+				return err
+			}
+			c.Author = us
+		}
+	}
+	c.Comments = comments
 	return nil
 }
 

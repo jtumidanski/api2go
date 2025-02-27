@@ -31,6 +31,11 @@ type UnmarshalResourceMeta interface {
 	SetResourceMeta(json.RawMessage) error
 }
 
+type UnmarshalIncludedRelations interface {
+	MarshalIdentifier
+	SetReferencedStructs(references []Data) error
+}
+
 // The EditToManyRelations interface can be optionally implemented to add and
 // delete to-many relationships on a already unmarshalled struct. These methods
 // are used by our API for the to-many relationship update routes.
@@ -105,7 +110,11 @@ func Unmarshal(data []byte, target interface{}) error {
 	}
 
 	if ctx.Data.DataObject != nil {
-		return setDataIntoTarget(ctx.Data.DataObject, target)
+		err := setDataIntoTarget(ctx.Data.DataObject, target)
+		if err != nil {
+			return err
+		}
+		return setIncludedIntoTarget(ctx.Included, target)
 	}
 
 	if ctx.Data.DataArray != nil {
@@ -138,9 +147,17 @@ func Unmarshal(data []byte, target interface{}) error {
 				if err != nil {
 					return err
 				}
+				err = setIncludedIntoTarget(ctx.Included, targetRecord.Interface())
+				if err != nil {
+					return err
+				}
 				targetValue = reflect.Append(targetValue, targetRecord.Elem())
 			} else {
 				err := setDataIntoTarget(&record, targetRecord.Interface())
+				if err != nil {
+					return err
+				}
+				err = setIncludedIntoTarget(ctx.Included, targetRecord.Interface())
 				if err != nil {
 					return err
 				}
@@ -150,6 +167,23 @@ func Unmarshal(data []byte, target interface{}) error {
 		targetPointer.Elem().Set(targetValue)
 	}
 
+	return nil
+}
+
+func setIncludedIntoTarget(included []Data, target interface{}) error {
+	if included == nil {
+		return nil
+	}
+	if len(included) == 0 {
+		return nil
+	}
+
+	if m, ok := target.(UnmarshalIncludedRelations); ok {
+		err := m.SetReferencedStructs(included)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

@@ -805,4 +805,144 @@ var _ = Describe("Unmarshal", func() {
 			Expect(expectedPost.ResourceMetadata["post-count"]).To(Equal(simplePostWithMetadata.ResourceMetadata["post-count"]))
 		})
 	})
+
+	It("unmarshal to-one and to-many relations with included", func() {
+		expectedPost := Post{ID: 3, Title: "Test", AuthorID: sql.NullInt64{Valid: true, Int64: 1}, Author: &User{ID: 1, Name: "Charles"}, CommentsIDs: []int{1, 2}, Comments: []Comment{{ID: 1, Text: "Test1"}, {ID: 2, Text: "Test2"}}}
+		postJSON := []byte(`{
+				"data": {
+					"id":   "3",
+					"type": "posts",
+					"attributes": {
+						"title": "Test"
+					},
+					"relationships": {
+						"author": {
+							"data": {
+								"id":   "1",
+								"type": "users"
+							}
+						},
+						"comments": {
+							"data": [
+								{
+									"id":   "1",
+									"type": "comments"
+								},
+								{
+									"id":   "2",
+									"type": "comments"
+								}
+							]
+						}
+					}
+				},
+				"included": [
+					{
+						"type": "comments",
+						"id": "1",
+						"attributes": {
+							"text": "Test1"
+						}
+					},
+					{
+						"type": "comments",
+						"id": "2",
+						"attributes": {
+							"text": "Test2"
+						}
+					},
+					{
+						"type": "users",
+						"id": "1",
+						"attributes": {
+							"name": "Charles"
+						}
+					}
+				]
+			}`)
+		var post Post
+		err := Unmarshal(postJSON, &post)
+		Expect(err).To(BeNil())
+		Expect(post).To(Equal(expectedPost))
+	})
+
+	It("unmarshal to-one and to-many relations with included", func() {
+		expectedPosts := []Post{
+			{ID: 3, Title: "Test", AuthorID: sql.NullInt64{Valid: true, Int64: 1}, Author: &User{ID: 1, Name: "Charles"}, CommentsIDs: []int{1, 2}, Comments: []Comment{{ID: 1, Text: "Test1"}, {ID: 2, Text: "Test2"}}},
+			{ID: 4, Title: "Test", AuthorID: sql.NullInt64{Valid: true, Int64: 1}, Author: &User{ID: 1, Name: "Charles"}},
+		}
+		postJSON := []byte(`{
+				"data": [
+					{
+						"id":   "3",
+						"type": "posts",
+						"attributes": {
+							"title": "Test"
+						},
+						"relationships": {
+							"author": {
+								"data": {
+									"id":   "1",
+									"type": "users"
+								}
+							},
+							"comments": {
+								"data": [
+									{
+										"id":   "1",
+										"type": "comments"
+									},
+									{
+										"id":   "2",
+										"type": "comments"
+									}
+								]
+							}
+						}
+					},
+					{
+						"id":   "4",
+						"type": "posts",
+						"attributes": {
+							"title": "Test"
+						},
+						"relationships": {
+							"author": {
+								"data": {
+									"id":   "1",
+									"type": "users"
+								}
+							}
+						}
+					}
+				],
+				"included": [
+					{
+						"type": "comments",
+						"id": "1",
+						"attributes": {
+							"text": "Test1"
+						}
+					},
+					{
+						"type": "comments",
+						"id": "2",
+						"attributes": {
+							"text": "Test2"
+						}
+					},
+					{
+						"type": "users",
+						"id": "1",
+						"attributes": {
+							"name": "Charles"
+						}
+					}
+				]
+			}`)
+		var posts []Post
+		err := Unmarshal(postJSON, &posts)
+		Expect(err).To(BeNil())
+		Expect(posts).To(Equal(expectedPosts))
+	})
 })
