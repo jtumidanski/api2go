@@ -2,6 +2,7 @@ package resource
 
 import (
 	"errors"
+	"github.com/jtumidanski/api2go/jsonapi"
 	"net/http"
 
 	"github.com/jtumidanski/api2go"
@@ -52,7 +53,7 @@ func (c ChocolateResource) FindOne(ID string, r api2go.Request) (api2go.Responde
 func (c ChocolateResource) Create(obj interface{}, r api2go.Request) (api2go.Responder, error) {
 	choc, ok := obj.(model.Chocolate)
 	if !ok {
-		return &Response{}, api2go.NewHTTPError(errors.New("Invalid instance given"), "Invalid instance given", http.StatusBadRequest)
+		return &Response{}, jsonapi.NewHTTPError(errors.New("Invalid instance given"), "Invalid instance given", http.StatusBadRequest)
 	}
 
 	id := c.ChocStorage.Insert(choc)
@@ -70,7 +71,7 @@ func (c ChocolateResource) Delete(id string, r api2go.Request) (api2go.Responder
 func (c ChocolateResource) Update(obj interface{}, r api2go.Request) (api2go.Responder, error) {
 	choc, ok := obj.(model.Chocolate)
 	if !ok {
-		return &Response{}, api2go.NewHTTPError(errors.New("Invalid instance given"), "Invalid instance given", http.StatusBadRequest)
+		return &Response{}, jsonapi.NewHTTPError(errors.New("Invalid instance given"), "Invalid instance given", http.StatusBadRequest)
 	}
 
 	err := c.ChocStorage.Update(choc)

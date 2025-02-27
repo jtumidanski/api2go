@@ -313,7 +313,7 @@ func (s *fixtureSource) FindOne(id string, req Request) (Responder, error) {
 
 		return &Response{Res: *p}, nil
 	}
-	return nil, NewHTTPError(nil, "post not found", http.StatusNotFound)
+	return nil, jsonapi.NewHTTPError(nil, "post not found", http.StatusNotFound)
 }
 
 func (s *fixtureSource) Create(obj interface{}, req Request) (Responder, error) {
@@ -326,8 +326,8 @@ func (s *fixtureSource) Create(obj interface{}, req Request) (Responder, error) 
 	}
 
 	if p.Title == "" {
-		err := NewHTTPError(errors.New("Bad request"), "Bad Request", http.StatusBadRequest)
-		err.Errors = append(err.Errors, Error{ID: "SomeErrorID", Source: &ErrorSource{Pointer: "Title"}})
+		err := jsonapi.NewHTTPError(errors.New("Bad request"), "Bad Request", http.StatusBadRequest)
+		err.Errors = append(err.Errors, jsonapi.Error{ID: "SomeErrorID", Source: &jsonapi.ErrorSource{Pointer: "Title"}})
 		return &Response{}, err
 	}
 
@@ -363,7 +363,7 @@ func (s *fixtureSource) Update(obj interface{}, req Request) (Responder, error) 
 		oldP.Comments = p.Comments
 		return &Response{Code: http.StatusNoContent}, nil
 	}
-	return &Response{}, NewHTTPError(nil, "post not found", http.StatusNotFound)
+	return &Response{}, jsonapi.NewHTTPError(nil, "post not found", http.StatusNotFound)
 }
 
 type userSource struct {
@@ -404,7 +404,7 @@ func (s *userSource) Delete(id string, req Request) (Responder, error) {
 }
 
 func (s *userSource) Update(obj interface{}, req Request) (Responder, error) {
-	return &Response{}, NewHTTPError(nil, "user not found", http.StatusNotFound)
+	return &Response{}, jsonapi.NewHTTPError(nil, "user not found", http.StatusNotFound)
 }
 
 type commentSource struct {
@@ -448,7 +448,7 @@ func (s *commentSource) Delete(id string, req Request) (Responder, error) {
 }
 
 func (s *commentSource) Update(obj interface{}, req Request) (Responder, error) {
-	return &Response{}, NewHTTPError(nil, "comment not found", http.StatusNotFound)
+	return &Response{}, jsonapi.NewHTTPError(nil, "comment not found", http.StatusNotFound)
 }
 
 var _ = Describe("RestHandler", func() {
@@ -1739,17 +1739,17 @@ var _ = Describe("RestHandler", func() {
 			Expect(err).ToNot(HaveOccurred())
 			api.Handler().ServeHTTP(rec, req)
 			Expect(rec.Code).To(Equal(http.StatusBadRequest))
-			error := HTTPError{}
+			error := jsonapi.HTTPError{}
 			err = json.Unmarshal(rec.Body.Bytes(), &error)
 			Expect(err).ToNot(HaveOccurred())
 
-			expectedError := func(field, objType string) Error {
-				return Error{
+			expectedError := func(field, objType string) jsonapi.Error {
+				return jsonapi.Error{
 					Status: "Bad Request",
 					Code:   codeInvalidQueryFields,
 					Title:  fmt.Sprintf(`Field "%s" does not exist for type "%s"`, field, objType),
 					Detail: "Please make sure you do only request existing fields",
-					Source: &ErrorSource{
+					Source: &jsonapi.ErrorSource{
 						Parameter: fmt.Sprintf("fields[%s]", objType),
 					},
 				}

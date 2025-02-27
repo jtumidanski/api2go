@@ -2,6 +2,7 @@ package resource
 
 import (
 	"errors"
+	"github.com/jtumidanski/api2go/jsonapi"
 	"net/http"
 	"sort"
 	"strconv"
@@ -119,7 +120,7 @@ func (s UserResource) PaginatedFindAll(r api2go.Request) (uint, api2go.Responder
 func (s UserResource) FindOne(ID string, r api2go.Request) (api2go.Responder, error) {
 	user, err := s.UserStorage.GetOne(ID)
 	if err != nil {
-		return &Response{}, api2go.NewHTTPError(err, err.Error(), http.StatusNotFound)
+		return &Response{}, jsonapi.NewHTTPError(err, err.Error(), http.StatusNotFound)
 	}
 
 	user.Chocolates = []*model.Chocolate{}
@@ -137,7 +138,7 @@ func (s UserResource) FindOne(ID string, r api2go.Request) (api2go.Responder, er
 func (s UserResource) Create(obj interface{}, r api2go.Request) (api2go.Responder, error) {
 	user, ok := obj.(model.User)
 	if !ok {
-		return &Response{}, api2go.NewHTTPError(errors.New("Invalid instance given"), "Invalid instance given", http.StatusBadRequest)
+		return &Response{}, jsonapi.NewHTTPError(errors.New("Invalid instance given"), "Invalid instance given", http.StatusBadRequest)
 	}
 
 	id := s.UserStorage.Insert(user)
@@ -156,7 +157,7 @@ func (s UserResource) Delete(id string, r api2go.Request) (api2go.Responder, err
 func (s UserResource) Update(obj interface{}, r api2go.Request) (api2go.Responder, error) {
 	user, ok := obj.(model.User)
 	if !ok {
-		return &Response{}, api2go.NewHTTPError(errors.New("Invalid instance given"), "Invalid instance given", http.StatusBadRequest)
+		return &Response{}, jsonapi.NewHTTPError(errors.New("Invalid instance given"), "Invalid instance given", http.StatusBadRequest)
 	}
 
 	err := s.UserStorage.Update(user)
