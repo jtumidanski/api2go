@@ -33,7 +33,7 @@ type UnmarshalResourceMeta interface {
 
 type UnmarshalIncludedRelations interface {
 	MarshalIdentifier
-	SetReferencedStructs(references []Data) error
+	SetReferencedStructs(references map[string]map[string]Data) error
 }
 
 // The EditToManyRelations interface can be optionally implemented to add and
@@ -179,7 +179,15 @@ func setIncludedIntoTarget(included []Data, target interface{}) error {
 	}
 
 	if m, ok := target.(UnmarshalIncludedRelations); ok {
-		err := m.SetReferencedStructs(included)
+		var incMap = make(map[string]map[string]Data)
+		for _, inc := range included {
+			if _, ok := incMap[inc.Type]; !ok {
+				incMap[inc.Type] = make(map[string]Data)
+			}
+			incMap[inc.Type][inc.ID] = inc
+		}
+
+		err := m.SetReferencedStructs(incMap)
 		if err != nil {
 			return err
 		}
