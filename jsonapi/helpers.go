@@ -192,3 +192,47 @@ func replaceAttributes(query *map[string][]string, entry *Data) map[string][]str
 
 	return nil
 }
+
+// ProcessIncludeData processes data contained about object, leveraging the references map to fill included relations.
+// Relations of object are set, and thus can be processed recursively in SetReferencedStructs implementation.
+func ProcessIncludeData(object interface{}, data Data, references map[string]map[string]Data) error {
+	err := json.Unmarshal(data.Attributes, &object)
+	if err != nil {
+		return err
+	}
+	if rels := data.Relationships; rels != nil {
+		if mr, ok := object.(MarshalReferences); ok {
+			for _, ref := range mr.GetReferences() {
+				if rel, ok := rels[ref.Name]; ok {
+					if rdata := rel.Data; rdata != nil {
+						if rdata.DataObject != nil {
+							if sto, ok := object.(UnmarshalToOneRelations); ok {
+								err = sto.SetToOneReferenceID(ref.Name, rdata.DataObject.ID)
+								if err != nil {
+									return err
+								}
+							}
+						}
+						if rdata.DataArray != nil {
+							if stm, ok := object.(UnmarshalToManyRelations); ok {
+								ids := make([]string, 0)
+								for _, rd := range rdata.DataArray {
+									ids = append(ids, rd.ID)
+								}
+								err = stm.SetToManyReferenceIDs(ref.Name, ids)
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if srs, ok := object.(UnmarshalIncludedRelations); ok {
+		err = srs.SetReferencedStructs(references)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
