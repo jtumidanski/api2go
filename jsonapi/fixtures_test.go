@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"strconv"
 	"time"
 
@@ -298,6 +299,10 @@ func (c *Post) SetReferencedStructs(references map[string]map[string]Data) error
 			}
 		}
 	}
+	sort.Slice(comments, func(i, j int) bool {
+		return comments[i].ID < comments[j].ID
+	})
+
 	c.Comments = comments
 	return nil
 }
